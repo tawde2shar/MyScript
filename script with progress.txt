@@ -1,0 +1,36 @@
+$Path = "C:\Temp"
+$File = "$Path\file.zip"
+$Url  = "https://example.com/file.zip"
+
+# Ensure directory exists
+if (!(Test-Path $Path)) {
+    New-Item -ItemType Directory -Path $Path | Out-Null
+}
+
+# Start BITS download (asynchronous)
+$Job = Start-BitsTransfer -Source $Url -Destination $File -Asynchronous
+
+Write-Host "Download started..."
+
+# Poll progress every 3 seconds
+while ($Job.JobState -eq "Transferring") {
+
+    if ($Job.BytesTotal -gt 0) {
+        $Percent = [math]::Round(($Job.BytesTransferred / $Job.BytesTotal) * 100, 2)
+        Write-Host "Downloaded: $Percent %"
+    } else {
+        Write-Host "Calculating download size..."
+    }
+
+    Start-Sleep -Seconds 3
+    $Job = Get-BitsTransfer -JobId $Job.JobId
+}
+
+# Complete job
+if ($Job.JobState -eq "Transferred") {
+    Complete-BitsTransfer -BitsJob $Job
+    Write-Host "Download completed successfully."
+}
+elseif ($Job.JobState -eq "Error") {
+    Write-Host "Download failed."
+}

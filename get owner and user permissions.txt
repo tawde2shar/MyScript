@@ -1,0 +1,17 @@
+$Path = "D:\Products\Ivanti\Customers\Acceron\12-02-2026\Ivanti_TWIN11-D1_2026-02-12_10-37-07.zip"
+
+$acl = Get-Acl -Path $Path
+
+# Owner
+Write-Host "Owner:" $acl.Owner
+Write-Host ""
+
+# Permission entries
+$acl.Access | Select-Object `
+    @{N="Principal";E={$_.IdentityReference}}, `
+    @{N="Type";E={$_.AccessControlType}}, `
+    @{N="Rights";E={$_.FileSystemRights}}, `
+    @{N="Inherited";E={$_.IsInherited}}, `
+    @{N="InheritanceFlags";E={$_.InheritanceFlags}}, `
+    @{N="PropagationFlags";E={$_.PropagationFlags}} |
+Format-Table -AutoSize

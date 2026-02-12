@@ -1,0 +1,20 @@
+$Path = "C:\Temp"
+$File = "$Path\AcroRdrDCUpd2500120997.msp"
+$Url  = "https://ardownload3.adobe.com/pub/adobe/reader/win/AcrobatDC/2500120997/AcroRdrDCUpd2500120997.msp"
+
+# Ensure directory exists
+if (!(Test-Path $Path)) {
+    New-Item -ItemType Directory -Path $Path | Out-Null
+}
+
+try {
+    Write-Output "Download Started"
+
+    # Suppress progress UI but allow HTTPS download
+    $ProgressPreference = 'SilentlyContinue'
+
+    Invoke-WebRequest -Uri $Url -OutFile $File -UseBasicParsing -ErrorAction Stop
+}
+catch {
+    Write-Output "Download Fail"
+}
