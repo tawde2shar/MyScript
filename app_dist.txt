@@ -1,0 +1,110 @@
+#!/bin/sh
+
+###############################################
+# macOS Application Deployment Script
+# Author: Your Name
+# Description:
+#  - Installs apps on macOS using pkg/dmg/zip/Homebrew
+#  - Creates logs
+#  - Detects existing installation
+#  - Runs silently
+###############################################
+
+LOG_DIR="/var/log/app-deploy"
+LOG_FILE="$LOG_DIR/deploy.log"
+APP_NAME="Google Chrome"
+BREW_APP_NAME="google-chrome"
+PKG_URL=""
+DMG_URL=""
+ZIP_URL=""
+
+# Create log directory
+mkdir -p "$LOG_DIR"
+
+log() {
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $1" | tee -a "$LOG_FILE"
+}
+
+check_app_installed() {
+    if [ -d "/Applications/$APP_NAME.app" ]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+install_with_brew() {
+    if ! command -v brew >/dev/null 2>&1; then
+        log "Homebrew not found. Installing Homebrew..."
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+        log "Homebrew installed."
+    fi
+
+    log "Installing $APP_NAME via Homebrew..."
+    brew install --cask "$BREW_APP_NAME"
+}
+
+install_pkg() {
+    PKG_FILE="/tmp/app.pkg"
+    curl -L "$PKG_URL" -o "$PKG_FILE"
+    log "Downloaded PKG file."
+
+    sudo installer -pkg "$PKG_FILE" -target /
+    log "PKG installation complete."
+}
+
+install_dmg() {
+    DMG_FILE="/tmp/app.dmg"
+    curl -L "$DMG_URL" -o "$DMG_FILE"
+    log "Downloaded DMG file."
+
+    MOUNT_POINT=$(hdiutil attach "$DMG_FILE" | grep Volumes | awk '{print $3}')
+    cp -R "$MOUNT_POINT"/*.app /Applications/
+    hdiutil detach "$MOUNT_POINT"
+
+    log "DMG installation complete."
+}
+
+install_zip() {
+    ZIP_FILE="/tmp/app.zip"
+    curl -L "$ZIP_URL" -o "$ZIP_FILE"
+    log "Downloaded ZIP file."
+
+    unzip -q "$ZIP_FILE" -d /tmp/appzip
+    cp -R /tmp/appzip/*.app /Applications/
+
+    log "ZIP installation complete."
+}
+
+###############################################
+# Main Logic
+###############################################
+
+log "Starting deployment for $APP_NAME..."
+
+if check_app_installed; then
+    log "$APP_NAME is already installed. Skipping installation."
+    exit 0
+fi
+
+if [ -n "$BREW_APP_NAME" ]; then
+    install_with_brew
+elif [ -n "$PKG_URL" ]; then
+    install_pkg
+elif [ -n "$DMG_URL" ]; then
+    install_dmg
+elif [ -n "$ZIP_URL" ]; then
+    install_zip
+else
+    log "No installation source defined. Exiting."
+    exit 1
+fi
+
+if check_app_installed; then
+    log "Installation successful: $APP_NAME"
+else
+    log "Installation failed: $APP_NAME"
+    exit 1
+fi
+
+exit 0

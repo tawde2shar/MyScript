@@ -1,0 +1,51 @@
+# List of URLs to be processed
+$urls = @(
+    'https://builds.dotnet.microsoft.com/dotnet/WindowsDesktop/8.0.21/windowsdesktop-runtime-8.0.21-win-x64.exe',
+    'https://builds.dotnet.microsoft.com/dotnet/Runtime/8.0.21/dotnet-runtime-8.0.21-win-x64.exe',
+    'https://download.ivanticloud.com/d/e/AGENTUIWIN64/1.1.742.0/NeuronsAgentUIInstaller64.msi',
+    'https://download.ivanticloud.com/d/e/SWD.X64/1.0.725.20251218/SWDSetup-x64.msi',
+    'https://download.ivanticloud.com/d/e/UNO.AUTOMATION.ENGINE64/1.26.3509.0/AutomationEngineInstall64.msi',
+    'https://download.ivanticloud.com/d/e/UNO.WILDPULSE.ENGINE64/1.1.556.0/WildPulseEngine64.msi',
+    'https://download.ivanticloud.com/d/e/UNO.INVENTORY.ENGINE64.V2/3.1.172.20260113/InventoryEngineInstall-x64.msi',
+    'https://download.ivanticloud.com/d/e/AGENTPATCH64/1.1.142.0/CloudPatchInstaller64.msi',
+    'https://download.ivanticloud.com/d/e/SYNCENGINEX64/1.1.164.0/SyncEngineInstaller64.msi',
+    'https://download.ivanticloud.com/d/e/AGENTREMOTECONTROL64/1.2.362.0/RemoteControlEngine64.msi', 
+    'https://download.ivanticloud.com/d/e/7ZDLL64/25.1.0.0/7z64.dll',
+    'https://download.ivanticloud.com/d/e/CLEXE64/9.7.825.0/CL564.exe'
+)
+
+# Base path where you want to save the files (network path)
+$baseDirectory = '\\win11off\Patch'
+
+# Process each URL
+foreach ($url in $urls) {
+    # Extract the relative path from the URL (remove the domain)
+    $uri = New-Object Uri($url)
+    $relativePath = $uri.AbsolutePath.TrimStart('/')
+
+    # Split the relative path into folder components (remove file name from the path)
+    $pathComponents = [System.IO.Path]::GetDirectoryName($relativePath) -split '/'
+
+    # Combine the base directory with the path components to create the full folder path
+    $folderPath = Join-Path -Path $baseDirectory -ChildPath ($pathComponents -join '\')
+
+    # Ensure the folder structure exists
+    if (-not (Test-Path -Path $folderPath)) {
+        New-Item -Path $folderPath -ItemType Directory -Force
+    }
+
+    # Full file path for saving the downloaded file
+    $fileName = [System.IO.Path]::GetFileName($url)
+    $filePath = Join-Path -Path $folderPath -ChildPath $fileName
+
+    # Download the file from the URL and save it to the constructed path
+    try {
+        Write-Host "Downloading: $url"
+        Invoke-WebRequest -Uri $url -OutFile $filePath
+        Write-Host "Downloaded to: $filePath"
+    } catch {
+        Write-Host "Failed to download $url. Error: $_"
+    }
+}
+
+Write-Host "All downloads completed."

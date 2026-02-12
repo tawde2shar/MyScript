@@ -1,0 +1,9 @@
+$path = "\\pun-preferred\Ivanti_PS\d\m\ga"
+ 
+try {
+    Get-ChildItem -Path $path -ErrorAction Stop | Out-Null
+    "Shared path is accessible and directory listing succeeded."
+}
+catch {
+    "Shared path is NOT accessible."
+}
